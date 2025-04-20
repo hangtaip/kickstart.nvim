@@ -91,7 +91,7 @@ vim.g.mapleader = ' '
 vim.g.maplocalleader = ' '
 
 -- Set to true if you have a Nerd Font installed and selected in the terminal
-vim.g.have_nerd_font = false
+vim.g.have_nerd_font = true
 
 -- [[ Setting options ]]
 -- See `:help vim.o`
@@ -102,13 +102,22 @@ vim.g.have_nerd_font = false
 vim.o.number = true
 -- You can also add relative line numbers, to help with jumping.
 --  Experiment for yourself to see if you like it!
--- vim.o.relativenumber = true
+vim.opt.relativenumber = true
 
 -- Enable mouse mode, can be useful for resizing splits for example!
 vim.o.mouse = 'a'
 
 -- Don't show the mode, since it's already in the status line
 vim.o.showmode = false
+
+-- Enable code fold
+vim.opt.foldmethod = 'indent'
+
+-- Set tabs width
+vim.opt.expandtab = true
+vim.opt.smartindent = true
+vim.opt.tabstop = 3
+vim.opt.shiftwidth = 3
 
 -- Sync clipboard between OS and Neovim.
 --  Schedule the setting after `UiEnter` because it can increase startup-time.
@@ -166,6 +175,8 @@ vim.o.scrolloff = 10
 -- See `:help 'confirm'`
 vim.o.confirm = true
 
+vim.opt.cmdheight = 0
+
 -- [[ Basic Keymaps ]]
 --  See `:help vim.keymap.set()`
 
@@ -198,6 +209,21 @@ vim.keymap.set('n', '<C-h>', '<C-w><C-h>', { desc = 'Move focus to the left wind
 vim.keymap.set('n', '<C-l>', '<C-w><C-l>', { desc = 'Move focus to the right window' })
 vim.keymap.set('n', '<C-j>', '<C-w><C-j>', { desc = 'Move focus to the lower window' })
 vim.keymap.set('n', '<C-k>', '<C-w><C-k>', { desc = 'Move focus to the upper window' })
+vim.keymap.set('n', '<A-o>', 'o<Esc>', { desc = 'Add space below' })
+vim.keymap.set('n', '<A-O>', 'O<Esc>', { desc = 'Add space above' })
+
+-- Exit insert mode with easier shortcut
+vim.keymap.set('i', 'jk', '<Esc>l', { desc = 'Exit insert mode' })
+vim.keymap.set('i', '<A-h>', '<C-o>h', { desc = 'Move cursor to the left' })
+vim.keymap.set('i', '<A-l>', '<C-o>l', { desc = 'Move cursor to the right' })
+vim.keymap.set('i', '<A-j>', '<C-o>j', { desc = 'Move cursor down' })
+vim.keymap.set('i', '<A-k>', '<C-o>k', { desc = 'Move cursor up' })
+
+-- Telescope File Browser
+vim.keymap.set('n', '<leader>fb', ':Telescope file_browser<CR>', { desc = '[F]ile [B]rowser' })
+
+-- Command Mode Shortcut
+vim.keymap.set('n', ';', ':', { desc = 'Command Mode Alt' })
 
 -- NOTE: Some terminals have colliding keymaps or are not able to send distinct keycodes
 -- vim.keymap.set("n", "<C-S-h>", "<C-w>H", { desc = "Move window to the left" })
@@ -412,7 +438,9 @@ require('lazy').setup({
         --     i = { ['<c-enter>'] = 'to_fuzzy_refine' },
         --   },
         -- },
-        -- pickers = {}
+        pickers = {
+          find_files = { hidden = true },
+        },
         extensions = {
           ['ui-select'] = {
             require('telescope.themes').get_dropdown(),
@@ -572,6 +600,11 @@ require('lazy').setup({
           --  the definition of its *type*, not where it was *defined*.
           map('grt', require('telescope.builtin').lsp_type_definitions, '[G]oto [T]ype Definition')
 
+          map(']k', function()
+            vim.diagnostic.open_float()
+            vim.diagnostic.open_float()
+          end, 'Open and Jump Into Diagnostic Float')
+
           -- This function resolves a difference between neovim nightly (version 0.11) and stable (version 0.10)
           ---@param client vim.lsp.Client
           ---@param method vim.lsp.protocol.Method
@@ -671,6 +704,16 @@ require('lazy').setup({
       --  - settings (table): Override the default settings passed when initializing the server.
       --        For example, to see the options for `lua_ls`, you could go to: https://luals.github.io/wiki/settings/
       local servers = {
+        denols = {
+          root_dir = require('lspconfig').util.root_pattern { 'deno.json', 'deno.jsonc', 'deno.lock' },
+          single_file_support = false,
+          settings = {
+            deno = {
+              enable = true,
+              lint = true,
+            },
+          },
+        },
         -- clangd = {},
         -- gopls = {},
         -- pyright = {},
@@ -681,7 +724,11 @@ require('lazy').setup({
         --    https://github.com/pmizio/typescript-tools.nvim
         --
         -- But for many setups, the LSP (`ts_ls`) will work just fine
-        -- ts_ls = {},
+        ts_ls = {
+          root_dir = require('lspconfig').util.root_pattern { 'package.json', 'tsconfig.json' },
+          single_file_support = false,
+          settings = {},
+        },
         --
 
         lua_ls = {
@@ -698,6 +745,8 @@ require('lazy').setup({
             },
           },
         },
+        pylsp = {},
+        superhtml = {},
       }
 
       -- Ensure the servers and tools above are installed
@@ -715,7 +764,9 @@ require('lazy').setup({
       -- for you, so that they are available from within Neovim.
       local ensure_installed = vim.tbl_keys(servers or {})
       vim.list_extend(ensure_installed, {
+        'prettierd', -- Used to format Javascript code
         'stylua', -- Used to format Lua code
+        'shfmt', -- Used to format shell code
       })
       require('mason-tool-installer').setup { ensure_installed = ensure_installed }
 
@@ -733,6 +784,23 @@ require('lazy').setup({
           end,
         },
       }
+
+      require('lspconfig').bashls.setup {
+        cmd = { 'deno', 'run', '--allow-all', 'npm:bash-language-server', 'start' },
+        capabilities = capabilities,
+      }
+
+      require('lspconfig').nixd.setup {
+        cmd = { 'nixd' },
+        capabilities = capabilities,
+        settings = {
+          nixd = {
+            formatting = {
+              command = { 'nixpkgs-fmt' },
+            },
+          },
+        },
+      }
     end,
   },
 
@@ -742,7 +810,7 @@ require('lazy').setup({
     cmd = { 'ConformInfo' },
     keys = {
       {
-        '<leader>f',
+        '<leader>ff',
         function()
           require('conform').format { async = true, lsp_format = 'fallback' }
         end,
@@ -756,7 +824,7 @@ require('lazy').setup({
         -- Disable "format_on_save lsp_fallback" for languages that don't
         -- have a well standardized coding style. You can add additional
         -- languages here or re-enable it for the disabled ones.
-        local disable_filetypes = { c = true, cpp = true }
+        local disable_filetypes = { c = true, cpp = true, javascript = true }
         if disable_filetypes[vim.bo[bufnr].filetype] then
           return nil
         else
@@ -772,7 +840,10 @@ require('lazy').setup({
         -- python = { "isort", "black" },
         --
         -- You can use 'stop_after_first' to run the first available formatter from the list
-        -- javascript = { "prettierd", "prettier", stop_after_first = true },
+        javascript = { 'prettierd', 'prettier', stop_after_first = true },
+        css = { 'prettierd' },
+        scss = { 'prettierd' },
+        bash = { 'shfmt' },
       },
     },
   },
@@ -799,12 +870,12 @@ require('lazy').setup({
           -- `friendly-snippets` contains a variety of premade snippets.
           --    See the README about individual language/framework/plugin snippets:
           --    https://github.com/rafamadriz/friendly-snippets
-          -- {
-          --   'rafamadriz/friendly-snippets',
-          --   config = function()
-          --     require('luasnip.loaders.from_vscode').lazy_load()
-          --   end,
-          -- },
+          {
+            'rafamadriz/friendly-snippets',
+            config = function()
+              require('luasnip.loaders.from_vscode').lazy_load()
+            end,
+          },
         },
         opts = {},
       },
@@ -984,7 +1055,7 @@ require('lazy').setup({
   --    This is the easiest way to modularize your config.
   --
   --  Uncomment the following line and add your plugins to `lua/custom/plugins/*.lua` to get going.
-  -- { import = 'custom.plugins' },
+  { import = 'custom.plugins' },
   --
   -- For additional information with loading, sourcing and examples see `:help lazy.nvim-🔌-plugin-spec`
   -- Or use telescope!
