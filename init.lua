@@ -714,6 +714,8 @@ require('lazy').setup({
             },
           },
         },
+        omnisharp = {},
+        postgrestools = {},
         -- clangd = {},
         -- gopls = {},
         -- pyright = {},
@@ -764,6 +766,8 @@ require('lazy').setup({
       -- for you, so that they are available from within Neovim.
       local ensure_installed = vim.tbl_keys(servers or {})
       vim.list_extend(ensure_installed, {
+        'csharpier', -- Used to format C# code
+        'netcoredbg', -- Used to format dotnetCore code
         'prettierd', -- Used to format Javascript code
         'stylua', -- Used to format Lua code
         'shfmt', -- Used to format shell code
