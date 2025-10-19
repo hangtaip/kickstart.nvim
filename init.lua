@@ -124,6 +124,21 @@ vim.opt.shiftwidth = 3
 --  Remove this option if you want your OS clipboard to remain independent.
 --  See `:help 'clipboard'`
 vim.schedule(function()
+  if vim.fn.has 'wsl' == 1 and vim.fn.executable 'win32yank.exe' then
+    vim.g.clipboard = {
+      name = 'win32yank-wsl',
+      copy = {
+        ['+'] = 'win32yank.exe -i --crlf',
+        ['*'] = 'win32yank.exe -i --crlf',
+      },
+      paste = {
+        ['+'] = 'win32yank.exe -o --lf',
+        ['*'] = 'win32yank.exe -o --lf',
+      },
+      cache_enabled = 0,
+    }
+  end
+
   vim.o.clipboard = 'unnamedplus'
 end)
 
