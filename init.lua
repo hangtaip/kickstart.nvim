@@ -789,12 +789,12 @@ require('lazy').setup({
         },
       }
 
-      require('lspconfig').bashls.setup {
+      vim.lsp.config('bashls', {
         cmd = { 'deno', 'run', '--allow-all', 'npm:bash-language-server', 'start' },
         capabilities = capabilities,
-      }
+      })
 
-      require('lspconfig').nixd.setup {
+      vim.lsp.config('nixd', {
         cmd = { 'nixd' },
         capabilities = capabilities,
         settings = {
@@ -804,7 +804,7 @@ require('lazy').setup({
             },
           },
         },
-      }
+      })
     end,
   },
 
